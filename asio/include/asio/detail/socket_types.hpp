@@ -308,6 +308,7 @@ typedef uint16_t u_short_type;
 #include <net.h>
 #include <netinet/in.h>
 #include <sys/param.h>
+#include "../platform_shims/ps/network_defines.h"
 struct in4_addr_type { u_long_type s_addr; };
 struct in4_mreq_type { in4_addr_type imr_multiaddr, imr_interface; };
 struct in6_addr_type { unsigned char s6_addr[16]; };
@@ -339,9 +340,6 @@ struct addrinfo_type {
     int ai_addrlen; void* ai_addr;
     char* ai_canonname; addrinfo_type* ai_next;
 };
-#define AI_PASSIVE      0x00000001
-#define AI_CANONNAME    0x00000002
-#define AI_NUMERICHOST  0x00000004
 struct linger_type { u_short_type l_onoff, l_linger; };
 #else
 typedef sockaddr socket_addr_type;
