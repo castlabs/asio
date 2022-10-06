@@ -305,66 +305,42 @@ const int max_addr_v6_str_len = 256;
 typedef uint32_t u_long_type;
 typedef uint16_t u_short_type;
 #if defined(__ORBIS__) || defined(__PROSPERO__)
-#include <net.h>
-#include <netinet/in.h>
-#include <sys/param.h>
-struct in4_addr_type { u_long_type s_addr; };
-struct in4_mreq_type { in4_addr_type imr_multiaddr, imr_interface; };
-struct in6_addr_type { unsigned char s6_addr[16]; };
-struct in6_mreq_type {
-    in6_addr_type ipv6mr_multiaddr;
-    unsigned long ipv6mr_interface;
-};
-typedef sockaddr socket_addr_type;
-typedef sockaddr_in sockaddr_in4_type;
-struct sockaddr_in6_type {
-    int sin6_family;
-    in6_addr_type sin6_addr; u_short_type sin6_port;
-    u_long_type sin6_flowinfo; u_long_type sin6_scope_id;
-};
+#include "../platform_shims/ps/network_defines.h"
 struct sockaddr_storage_type {
     int ss_family;
     unsigned char ss_bytes[128 - sizeof(int)];
 };
-#define NI_NOFQDN       0x00000001
-#define NI_NUMERICHOST  0x00000002
-#define NI_NAMEREQD     0x00000004
-#define NI_NUMERICSERV  0x00000008
-#define NI_DGRAM        0x00000010
-#define NI_MAXHOST      1025
-#define NI_MAXSERV      32
+
 struct addrinfo_type {
     int ai_flags;
     int ai_family, ai_socktype, ai_protocol;
     int ai_addrlen; void* ai_addr;
     char* ai_canonname; addrinfo_type* ai_next;
 };
-#define AI_PASSIVE      0x00000001
-#define AI_CANONNAME    0x00000002
-#define AI_NUMERICHOST  0x00000004
+
 struct linger_type { u_short_type l_onoff, l_linger; };
 #else
-typedef sockaddr socket_addr_type;
-typedef in_addr in4_addr_type;
-# if defined(__hpux)
-// HP-UX doesn't provide ip_mreq when _XOPEN_SOURCE_EXTENDED is defined.
-struct in4_mreq_type
-{
-  struct in_addr imr_multiaddr;
-  struct in_addr imr_interface;
-};
-# else
-typedef ip_mreq in4_mreq_type;
-# endif
-typedef sockaddr_in sockaddr_in4_type;
-typedef in6_addr in6_addr_type;
-typedef ipv6_mreq in6_mreq_type;
-typedef sockaddr_in6 sockaddr_in6_type;
 typedef sockaddr_storage sockaddr_storage_type;
 typedef sockaddr_un sockaddr_un_type;
 typedef addrinfo addrinfo_type;
 typedef ::linger linger_type;
 #endif // defined(__ORBIS__) || defined(__PROSPERO__)
+# if defined(__hpux)
+// HP-UX doesn't provide ip_mreq when _XOPEN_SOURCE_EXTENDED is defined.
+struct in4_mreq_type
+{
+    struct in_addr imr_multiaddr;
+    struct in_addr imr_interface;
+};
+# else
+typedef ip_mreq in4_mreq_type;
+# endif // defined(__hpux)
+typedef sockaddr socket_addr_type;
+typedef sockaddr_in sockaddr_in4_type;
+typedef in_addr in4_addr_type;
+typedef in6_addr in6_addr_type;
+typedef ipv6_mreq in6_mreq_type;
+typedef sockaddr_in6 sockaddr_in6_type;
 typedef int ioctl_arg_type;
 #if defined(ASIO_HAS_SSIZE_T)
 typedef ssize_t signed_size_type;
