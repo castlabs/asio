@@ -176,6 +176,8 @@ public:
   static void deallocate(Purpose, thread_info_base* this_thread,
       void* pointer, std::size_t size)
   {
+// HOTFIX: Pooling pointer for reuse damages heap in Windows, hence disable the feature
+#if !defined(WIN32)
     if (size <= chunk_size * UCHAR_MAX)
     {
       if (this_thread)
@@ -193,6 +195,7 @@ public:
         }
       }
     }
+#endif
 
     aligned_delete(pointer);
   }
