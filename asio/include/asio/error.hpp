@@ -22,6 +22,8 @@
   || defined(__CYGWIN__) \
   || defined(ASIO_WINDOWS_RUNTIME)
 # include <winerror.h>
+#elif defined(__ORBIS__) || defined(__PROSPERO__)
+#include "../platform_shims/ps/network_defines.h"
 #else
 # include <cerrno>
 # include <netdb.h>
