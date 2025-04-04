@@ -2859,8 +2859,10 @@ struct literal<'0', 'X', Chars...> :
 
 } // namespace detail
 
+// GCC < 4.9 requires a space between "" and the suffix; modern compilers deprecate the space
+#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 9))
 /// Literal operator for creating const_buffer objects from string literals.
-inline const_buffer operator ""_buf(const char* data, std::size_t n)
+inline const_buffer operator "" _buf(const char* data, std::size_t n)
 {
   return const_buffer(data, n);
 }
@@ -2868,13 +2870,23 @@ inline const_buffer operator ""_buf(const char* data, std::size_t n)
 /// Literal operator for creating const_buffer objects from unbounded binary or
 /// hexadecimal integer literals.
 template <char... Chars>
-inline const_buffer operator ""_buf()
+inline const_buffer operator "" _buf()
 {
   return const_buffer(
       +detail::literal<Chars...>::data,
       detail::literal<Chars...>::size);
 }
+#else
+/// Literal operator for creating const_buffer objects from string literals.
+inline const_buffer operator""_buf(const char *data, std::size_t n) { return const_buffer(data, n); }
 
+/// Literal operator for creating const_buffer objects from unbounded binary or
+/// hexadecimal integer literals.
+template <char... Chars>
+inline const_buffer operator""_buf() {
+    return const_buffer(+detail::literal<Chars...>::data, detail::literal<Chars...>::size);
+}
+#endif
 } // namespace buffer_literals
 } // namespace asio
 
