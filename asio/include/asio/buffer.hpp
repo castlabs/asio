@@ -2735,7 +2735,12 @@ struct literal<'0', 'X', Chars...> :
 } // namespace detail
 
 /// Literal operator for creating const_buffer objects from string literals.
+// GCC < 4.9 requires a space between "" and the suffix; modern compilers deprecate the space
+#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 9))
 inline const_buffer operator "" _buf(const char* data, std::size_t n)
+#else
+inline const_buffer operator ""_buf(const char* data, std::size_t n)
+#endif
 {
   return const_buffer(data, n);
 }
@@ -2743,7 +2748,11 @@ inline const_buffer operator "" _buf(const char* data, std::size_t n)
 /// Literal operator for creating const_buffer objects from unbounded binary or
 /// hexadecimal integer literals.
 template <char... Chars>
+#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 9))
 inline const_buffer operator "" _buf()
+#else
+inline const_buffer operator ""_buf()
+#endif
 {
   return const_buffer(
       +detail::literal<Chars...>::data,
