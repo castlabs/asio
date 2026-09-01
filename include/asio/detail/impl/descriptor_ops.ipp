@@ -67,6 +67,10 @@ int close(int d, state_type& state, asio::error_code& ec)
       int flags = ::fcntl(d, F_GETFL, 0);
       if (flags >= 0)
         ::fcntl(d, F_SETFL, flags & ~O_NONBLOCK);
+#elif defined(__ORBIS__) || defined(__PROSPERO__)
+      int optval = 0;
+      result = sceNetSetsockopt(d, SCE_NET_SOL_SOCKET,
+          SCE_NET_SO_NBIO, &optval, sizeof(optval));
 #else // defined(__SYMBIAN32__) || defined(__EMSCRIPTEN__)
       ioctl_arg_type arg = 0;
       if ((state & possible_dup) == 0)
@@ -116,6 +120,10 @@ bool set_user_non_blocking(int d, state_type& state,
     result = (flag != result) ? ::fcntl(d, F_SETFL, flag) : 0;
     get_last_error(ec, result < 0);
   }
+#elif defined(__ORBIS__) || defined(__PROSPERO__)
+  int optval = (value ? 1 : 0);
+  int result = sceNetSetsockopt(d, SCE_NET_SOL_SOCKET,
+      SCE_NET_SO_NBIO, &optval, sizeof(optval));
 #else // defined(__SYMBIAN32__) || defined(__EMSCRIPTEN__)
   ioctl_arg_type arg = (value ? 1 : 0);
   int result = 0;
@@ -188,6 +196,10 @@ bool set_internal_non_blocking(int d, state_type& state,
     result = (flag != result) ? ::fcntl(d, F_SETFL, flag) : 0;
     get_last_error(ec, result < 0);
   }
+#elif defined(__ORBIS__) || defined(__PROSPERO__)
+  int optval = (value ? 1 : 0);
+  int result = sceNetSetsockopt(d, SCE_NET_SOL_SOCKET,
+      SCE_NET_SO_NBIO, &optval, sizeof(optval));
 #else // defined(__SYMBIAN32__) || defined(__EMSCRIPTEN__)
   ioctl_arg_type arg = (value ? 1 : 0);
   int result = 0;
@@ -862,11 +874,16 @@ int ioctl(int d, state_type& state, long cmd,
     return -1;
   }
 
+#if defined(__ORBIS__) || defined(__PROSPERO__)
+  (void)state;
+#endif // defined(__ORBIS__) || defined(__PROSPERO__)
+
   int result = ::ioctl(d, cmd, arg);
   get_last_error(ec, result < 0);
 
   if (result >= 0)
   {
+#if !defined(__ORBIS__) && !defined(__PROSPERO__)
     // When updating the non-blocking mode we always perform the ioctl syscall,
     // even if the flags would otherwise indicate that the descriptor is
     // already in the correct state. This ensures that the underlying
@@ -887,6 +904,7 @@ int ioctl(int d, state_type& state, long cmd,
         state &= ~(user_set_non_blocking | internal_non_blocking);
       }
     }
+#endif // !defined(__ORBIS__) && !defined(__PROSPERO__)
   }
 
   return result;
@@ -926,12 +944,21 @@ int poll_read(int d, state_type state, asio::error_code& ec)
     return -1;
   }
 
+#if defined(__ORBIS__) || defined(__PROSPERO__)
+  fd_set fds;
+  FD_ZERO(&fds);
+  FD_SET(d, &fds);
+  timeval timeout_obj = { 0, 0 };
+  timeval* timeout = (state & user_set_non_blocking) ? &timeout_obj : 0;
+  int result = ::select(d + 1, &fds, 0, 0, timeout);
+#else // defined(__ORBIS__) || defined(__PROSPERO__)
   pollfd fds;
   fds.fd = d;
   fds.events = POLLIN;
   fds.revents = 0;
   int timeout = (state & user_set_non_blocking) ? 0 : -1;
   int result = ::poll(&fds, 1, timeout);
+#endif // defined(__ORBIS__) || defined(__PROSPERO__)
   get_last_error(ec, result < 0);
   if (result == 0)
     if (state & user_set_non_blocking)
@@ -947,12 +974,21 @@ int poll_write(int d, state_type state, asio::error_code& ec)
     return -1;
   }
 
+#if defined(__ORBIS__) || defined(__PROSPERO__)
+  fd_set fds;
+  FD_ZERO(&fds);
+  FD_SET(d, &fds);
+  timeval timeout_obj = { 0, 0 };
+  timeval* timeout = (state & user_set_non_blocking) ? &timeout_obj : 0;
+  int result = ::select(d + 1, 0, &fds, 0, timeout);
+#else // defined(__ORBIS__) || defined(__PROSPERO__)
   pollfd fds;
   fds.fd = d;
   fds.events = POLLOUT;
   fds.revents = 0;
   int timeout = (state & user_set_non_blocking) ? 0 : -1;
   int result = ::poll(&fds, 1, timeout);
+#endif // defined(__ORBIS__) || defined(__PROSPERO__)
   get_last_error(ec, result < 0);
   if (result == 0)
     if (state & user_set_non_blocking)
@@ -968,12 +1004,21 @@ int poll_error(int d, state_type state, asio::error_code& ec)
     return -1;
   }
 
+#if defined(__ORBIS__) || defined(__PROSPERO__)
+  fd_set fds;
+  FD_ZERO(&fds);
+  FD_SET(d, &fds);
+  timeval timeout_obj = { 0, 0 };
+  timeval* timeout = (state & user_set_non_blocking) ? &timeout_obj : 0;
+  int result = ::select(d + 1, 0, 0, &fds, timeout);
+#else // defined(__ORBIS__) || defined(__PROSPERO__)
   pollfd fds;
   fds.fd = d;
   fds.events = POLLPRI | POLLERR | POLLHUP;
   fds.revents = 0;
   int timeout = (state & user_set_non_blocking) ? 0 : -1;
   int result = ::poll(&fds, 1, timeout);
+#endif // defined(__ORBIS__) || defined(__PROSPERO__)
   get_last_error(ec, result < 0);
   if (result == 0)
     if (state & user_set_non_blocking)
